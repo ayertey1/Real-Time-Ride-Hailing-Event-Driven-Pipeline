@@ -12,7 +12,7 @@ def stream_csv_to_kinesis(file_path, stream_name, key_column, delay=0.5):
         reader = csv.DictReader(file)
         for row in reader:
             trip_id = row[key_column]
-            # Optional: Convert datetime strings to ISO if needed
+            # Convert datetime strings to ISO if needed
             for key, val in row.items():
                 if 'datetime' in key and val:
                     try:
