@@ -5,7 +5,7 @@ import json
 import base64
 from datetime import datetime
 
-kinesis = boto3.client('kinesis', region_name='us-north-1')  
+kinesis = boto3.client('kinesis', region_name='eu-north-1')  
 
 def stream_csv_to_kinesis(file_path, stream_name, key_column, delay=0.5):
     with open(file_path, 'r') as file:
