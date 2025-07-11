@@ -1,0 +1,49 @@
+name: Deploy Lambda Functions
+
+on:
+  push:
+    branches:
+      - devlab6
+      - prodlab6
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: eu-north-1
+      ENV_SUFFIX: ${{ github.ref_name == 'prodlab6' && '-prod' || '-dev' }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install dependencies
+        run: pip install boto3
+
+      - name: Deploy Lambda Functions with suffix
+        run: |
+          for file in lambdaFunc/*.py; do
+            BASE=$(basename "$file" .py)
+            NAME=$(echo "$BASE" | sed 's/_lambda_function//g')
+            FUNCTION_NAME="${NAME}${ENV_SUFFIX}"
+            echo "Deploying $FUNCTION_NAME from $file"
+
+            zip -j function.zip "$file"
+
+            aws lambda update-function-code \
+              --function-name "$FUNCTION_NAME" \
+              --zip-file fileb://function.zip \
+              --region $AWS_REGION || echo " Failed to deploy $FUNCTION_NAME"
+
+            rm function.zip
+          done
+
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
