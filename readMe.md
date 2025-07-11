@@ -24,9 +24,11 @@ REAL-TIME-PIPELINE/
 ├── .github/workflows/
 │   ├── deploy-lambdas.yml              # CI workflow to deploy Lambdas
 │   └── run-simulation.yml              # CI workflow to run streaming script
+|
+├── docs/                               # Architectural diagram and project images
+|
 └── .gitignore
 ```
-
 ---
 
 ## Features
@@ -194,6 +196,29 @@ Lambda `aggregate-daily-kpis.py` will automatically detect all available `dropof
 ```
 s3://analytics-bucket/trip-kpis/YYYY-MM-DD/kpis.json
 ```
+---
+## Solution Design Based on Requirements
+
+The project was implemented to meet the following **business and functional requirements**:
+
+### Business Requirement:
+
+> Provide real-time insights into ride-hailing activity by computing daily KPIs (count, sum, avg, min, max fares), based on matched trip\_start and trip\_end events.
+
+### Deliverables Breakdown:
+
+| Requirement                                  | Solution Component                                 | 
+| -------------------------------------------- | -------------------------------------------------- | 
+| Ingest real-time `trip_start` and `trip_end` | 2 Kinesis streams with simulator                   | 
+| Persist each trip record                     | DynamoDB `trip_events` table (keyed on `trip_id`)  | 
+| Detect trip completion                       | `process-trip-end` Lambda sets `trip_complete`     | 
+| Trigger on trip completion                   | DynamoDB Streams → `trip-complete-listener` Lambda | 
+| Buffer events for daily aggregation          | SQS `completed-trip-queue`                         | 
+| Aggregate daily KPIs                         | `aggregate-daily-kpis.py` with backfill logic      | 
+| Store JSON files partitioned by date         | S3 path: `trip-kpis/YYYY-MM-DD/kpis.json`          | 
+| Automate aggregation schedule                | EventBridge rule (daily @ 00:30 UTC)               | 
+| Logging and monitoring                       | Python `logger`, DLQs, CloudWatch integration      | 
+| Least privilege IAM policy                   | Scoped per Lambda role                             | 
 
 ---
 
@@ -221,12 +246,5 @@ s3://analytics-bucket/trip-kpis/YYYY-MM-DD/kpis.json
 
 ---
 
-## 🙌 Credits
 
-Built by **Peter Caleb Ayertey** with architectural and engineering guidance powered by ChatGPT 4o.
 
----
-
-## 📝 License
-
-This project is released under the MIT License.
