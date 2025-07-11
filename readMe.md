@@ -140,7 +140,7 @@ Each stream Lambda (start, end, listener) has a dedicated **SQS Dead-Letter Queu
 
 ---
 
-## 📖 Development Process
+## Development Process
 
 1. **Plan architecture** using modular Lambda components
 2. **Ingest data** from Kinesis (simulated locally via `stream-simulate.py`)
@@ -152,7 +152,7 @@ Each stream Lambda (start, end, listener) has a dedicated **SQS Dead-Letter Queu
 
 ---
 
-## 🧪 CI/CD Workflows
+## CI/CD Workflows
 
 ### `deploy-lambdas.yml`
 
@@ -166,9 +166,9 @@ Each stream Lambda (start, end, listener) has a dedicated **SQS Dead-Letter Queu
 
 ---
 
-## 👨‍💻 Usage Guide
+## Usage Guide
 
-### 🟢 Real-Time Streaming
+### Real-Time Streaming
 
 ```bash
 python src/stream-simulate.py
@@ -177,7 +177,7 @@ python src/stream-simulate.py
 * Streams `trip_start.csv` and `trip_end.csv` into Kinesis
 * Delays between events simulate live system behavior
 
-### 🟡 On-Demand KPI Aggregation
+### On-Demand KPI Aggregation
 
 Trigger aggregation manually via test event in Lambda:
 
@@ -187,7 +187,7 @@ Trigger aggregation manually via test event in Lambda:
 
 Or let EventBridge trigger it daily (00:30 UTC).
 
-### 🔴 Backfill Mode
+### Backfill Mode
 
 Lambda `aggregate-daily-kpis.py` will automatically detect all available `dropoff_datetime`s and write partitioned JSON files to:
 
@@ -197,7 +197,7 @@ s3://analytics-bucket/trip-kpis/YYYY-MM-DD/kpis.json
 
 ---
 
-## 📊 Sample Output (S3 KPI File)
+## Sample Output (S3 KPI File)
 
 ```json
 {
@@ -212,7 +212,7 @@ s3://analytics-bucket/trip-kpis/YYYY-MM-DD/kpis.json
 
 ---
 
-## ✅ Next Steps / Enhancements
+## Next Steps / Enhancements
 
 * [ ] Add unit tests and test harness with `pytest`
 * [ ] Create CloudWatch dashboards for traffic and failure visibility
