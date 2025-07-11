@@ -2,7 +2,7 @@ import boto3
 import csv
 import time
 import json
-import base64
+import threading
 from datetime import datetime
 
 kinesis = boto3.client('kinesis', region_name='eu-north-1')  
@@ -19,8 +19,12 @@ def stream_csv_to_kinesis(file_path, stream_name, key_column, delay=0.5):
                         row[key] = datetime.strptime(val, "%Y-%m-%d %H:%M:%S").isoformat()
                     except:
                         pass
-                elif val.replace('.', '', 1).isdigit():
-                    row[key] = float(val)
+                elif val:
+                    try:
+                        row[key] = float(val)
+                    except ValueError:
+                        pass
+
 
             data_json = json.dumps(row)
             print(f"Sending: {data_json}")
@@ -31,5 +35,15 @@ def stream_csv_to_kinesis(file_path, stream_name, key_column, delay=0.5):
             )
             time.sleep(delay)
 
-stream_csv_to_kinesis("data/trip_start.csv", "trip-start-stream", "trip_id", delay=0.3)
-stream_csv_to_kinesis("data/trip_end.csv", "trip-end-stream", "trip_id", delay=0.3)
+
+# Define threads
+start_thread = threading.Thread(target=stream_csv_to_kinesis, args=("data/trip_start.csv", "trip-start-stream", "trip_id", 0.3))
+end_thread = threading.Thread(target=stream_csv_to_kinesis, args=("data/trip_end.csv", "trip-end-stream", "trip_id", 0.3))
+
+# Start both streams
+start_thread.start()
+end_thread.start()
+
+# Wait for both to complete
+start_thread.join()
+end_thread.join()
