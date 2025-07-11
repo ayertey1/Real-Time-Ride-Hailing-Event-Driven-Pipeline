@@ -1,22 +1,31 @@
 import json
 import boto3
 import os
-from decimal import Decimal
+import base64
+from decimal import Decimal, InvalidOperation
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TRIP_TABLE'])
 
+def safe_decimal(value, field_name=""):
+    try:
+        if value is None or str(value).strip() == "":
+            raise ValueError("Empty or None value")
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError) as e:
+        print(f"[WARNING] Invalid decimal for '{field_name}': '{value}' - defaulting to 0")
+        return Decimal('0')  # fallback value
+
 def lambda_handler(event, context):
     for record in event['Records']:
         try:
-            # payload = json.loads(record['kinesis']['data'])
             # Decode base64 data from Kinesis
             raw_data = base64.b64decode(record['kinesis']['data']).decode('utf-8')
             payload = json.loads(raw_data)
-            trip_id = payload['trip_id']
+
+            trip_id = str(payload.get('trip_id', 'UNKNOWN'))
             print(f"Processing trip_end for trip_id: {trip_id}")
 
-            # First update the end fields
             update_expr = """SET dropoff_datetime = :ddt,
                                 rate_code = :rc,
                                 passenger_count = :pc,
@@ -27,18 +36,18 @@ def lambda_handler(event, context):
                                 trip_type = :tt,
                                 event_end_received = :eer"""
             expr_vals = {
-                ':ddt': payload['dropoff_datetime'],
-                ':rc': Decimal(str(payload['rate_code'])),
-                ':pc': Decimal(str(payload['passenger_count'])),
-                ':td': Decimal(str(payload['trip_distance'])),
-                ':fa': Decimal(str(payload['fare_amount'])),
-                ':ta': Decimal(str(payload['tip_amount'])),
-                ':pt': Decimal(str(payload['payment_type'])),
-                ':tt': Decimal(str(payload['trip_type'])),
+                ':ddt': payload.get('dropoff_datetime', 'N/A'),
+                ':rc': safe_decimal(payload.get('rate_code'), 'rate_code'),
+                ':pc': safe_decimal(payload.get('passenger_count'), 'passenger_count'),
+                ':td': safe_decimal(payload.get('trip_distance'), 'trip_distance'),
+                ':fa': safe_decimal(payload.get('fare_amount'), 'fare_amount'),
+                ':ta': safe_decimal(payload.get('tip_amount'), 'tip_amount'),
+                ':pt': safe_decimal(payload.get('payment_type'), 'payment_type'),
+                ':tt': safe_decimal(payload.get('trip_type'), 'trip_type'),
                 ':eer': True
             }
 
-            # Apply update
+            # Update the item in DynamoDB
             table.update_item(
                 Key={'trip_id': trip_id},
                 UpdateExpression=update_expr,
@@ -58,5 +67,5 @@ def lambda_handler(event, context):
                 )
 
         except Exception as e:
-            print(f"Error processing trip_end record: {str(e)}")
+            print(f"[ERROR] Error processing trip_end record for trip_id {trip_id}: {str(e)}")
             raise e
