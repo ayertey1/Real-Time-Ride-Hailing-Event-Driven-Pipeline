@@ -3,8 +3,8 @@ name: Deploy Lambda Functions
 on:
   push:
     branches:
-      - devlab6
-      - prodlab6
+      - devLab7
+      - prodLab7
 
 jobs:
   deploy:
